@@ -1,0 +1,276 @@
+%-------------------------
+% Resume in Latex
+% Author : Gennadii Chursov
+% Based off of: https://github.com/sb2nov/resume and https://www.overleaf.com/latex/templates/jakes-resume/syzfjbzwjncs
+% License : MIT
+%------------------------
+
+\documentclass[letterpaper,10pt]{article} % Reduced from 11pt to 10pt
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\usepackage{fontawesome}
+\usepackage{ifthen} % Added package for conditional statements
+\input{glyphtounicode}
+
+%----------FONT OPTIONS----------
+% sans-serif
+% \usepackage[sfdefault]{FiraSans}
+% \usepackage[sfdefault]{roboto}
+% \usepackage[sfdefault]{noto-sans}
+% \usepackage[default]{sourcesanspro}
+
+% serif
+% \usepackage{CormorantGaramond}
+% \usepackage{charter}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.85in} % Further reduced top margin
+\addtolength{\textheight}{1.75in} % Further increased text height
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-6pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-7pt}] % Reduced vertical spacing
+
+% Ensure that generated pdf is machine readable/ATS parsable
+\pdfgentounicode=1
+
+%-------------------------
+% Custom commands
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+\newcommand{\resumeRole}[2]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-7pt}
+}
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-1pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+
+\newcommand{\resumeSubSubheading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-7pt} % Reduced spacing
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt} % Reduced spacing
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-3pt}} % Reduced spacing
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-6.5pt}} % Reduced spacing
+
+%-------------------------------------------
+%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge \scshape Shreya Sonawane} \\
+    +91 93907 97465 $|$ 
+    \href{mailto:sv.shreya110@gmail.com}
+    {\underline{sv.shreya110@gmail.com}} \\
+
+    \href{https://www.linkedin.com/in/shreya-sonawane/}{\texttt{linkedin.com/in/shreya-sonawane/}} $|$
+\href{https://github.com/shreyacupcake}{\texttt{github.com/shreya-sonawane}} $|$
+\href{https://shreyasonawane.netlify.app/}{\texttt{shreyasonawane.netlify.app}}
+
+\end{center}
+
+%-----------EDUCATION-----------
+\section*{Education}
+ \resumeSubHeadingListStart
+    \resumeSubheading
+      {Vellore Institute of Technology} {Aug 2021 - Jun 2025}
+      {BTech. Computer Science with Blockchain Technology CGPA: 9.24/10} {Vellore, Tamil Nadu}
+
+    % \resumeSubheading
+    %   {FIITJEE Junior College} {May 2019 - May 2021}
+    %   {Class 12 - 97.2\%} {Hyderabad, Telangana}
+
+    % \resumeSubheading
+    %   {Akshara International School} {Jun 2017 - Aug 2019}
+    %   {Class 10 - 96.8\%} {Pune, Maharashtra}
+      
+  \resumeSubHeadingListEnd
+  
+%-----------EXPERIENCE-----------
+
+\section{Experience}
+\resumeSubHeadingListStart
+
+% HPE Internship
+\resumeSubheading
+      {Hewlett Packard Enterprise}{Bangalore, India}
+      {Software Engineer I}{Sept 2025 - Present}
+     \resumeItemListStart
+        \resumeItem{Delivered components for Transparent Data Encryption with HSM and modules for cataloguing virtual keystores, improving secure key discovery and management within encrypted environments.}
+        \resumeItem{Resolved 2 critical production defects for the HPE NonStop Database Compiler by correlating application errors with code-level issues to accelerate root-cause analysis.}
+        \resumeItem{Led AI-powered CVE analysis system POC — leveraged LLMs to analyze 1,000+ code files and identify security exposures with 97\% detection accuracy, which enabled faster vulnerability assessment across large-scale codebases.}
+    \resumeItemListEnd
+\resumeRole
+  {Software Engineer Intern}{Feb 2025 -- Aug 2025}
+  \resumeItemListStart
+    \resumeItem{Architected an automated pre-CIT infrastructure validation framework for NonStop Database environments, performing system readiness, dependency, and configuration integrity checks prior to execution of 8-hour CIT cycles.}
+    \resumeItem{Integrated the validation framework into CI/CD pipelines, significantly reducing failure diagnosis and recovery time from hours to minutes.}
+    \resumeItemListEnd
+
+% HPE CTY Internship
+\resumeRole
+ {CTY Intern}{Jan 2024 -- Jun 2024}
+     \resumeItemListStart
+        \resumeItem{Engineered a real-time security automation tool integrating packet sniffing, network traffic capture, and IPC mechanisms to process and analyze 10,000+ network events efficiently.}
+        % \resumeItem{Developed a logic-driven execution engine backed by a dynamic knowledge base, automating 15+ cybersecurity use cases and reducing manual security analysis effort.}
+    \resumeItemListEnd
+
+% Samsung Internship
+\resumeSubheading
+      {Samsung R\&D Institute}{Remote}
+      {PRISM Project Intern}{Dec 2023 - Jun 2024}
+     \resumeItemListStart
+        \resumeItem{Modelled a quality assurance framework for image caption generation models, achieving a 12\% improvement in BLEU score accuracy over baseline models on the Flickr8k Dataset through optimized evaluation and model validation techniques.}
+    \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+
+%-----------CLUBS AND VOLUNTEERING-----------
+
+\section{Projects}
+\resumeSubHeadingListStart
+
+    % Research Paper
+    \resumeProjectHeading
+        {\textbf{CT-Based TBI Localization using Deep Learning and Explainable AI}$|$ \emph{CNN, XAI}}{Jan 2026}
+    \resumeItemListStart
+        \resumeItem{Developed a ResNet-50 multi-label TBI localization model with Grad-CAM explainability to identify injuries across 16 brain regions, achieving 97.74\% accuracy.}
+        \resumeItem{Built an anatomically-aware augmentation pipeline using Alpha and Poisson blending, generating 7,400+ synthetic CT images from a clinical dataset with NIMHANS to address class imbalance and improve rare injury detection.}
+    \resumeItemListEnd
+    
+    \resumeProjectHeading
+        {\textbf{Goal-Aware Emotion-Tagged Graph Memory for Conversational AI} $|$ \emph{Conversational AI}}{Nov 2025}
+    \resumeItemListStart
+        \resumeItem{Built a memory-augmented conversational AI system combining emotion classification, intent recognition, graph-based memory retrieval, and LLM-based response generation, achieving 80.7\% emotion accuracy, 75.5\% goal accuracy, and 88.5\% context retention across 5 benchmark datasets.}
+    \resumeItemListEnd
+    % Research Paper
+    \resumeProjectHeading
+    {\textbf{\href{https://doi.org/10.47857/irjms.2025.v06i01.02497}{A Review on Deep Learning and Traumatic Brain Injury}}$|$ \emph{CNN}}{Jan 2025}
+    \resumeItemListStart
+        \resumeItem{Published in International Research Journal of Multidisciplinary Scope (IRJMS).}
+    \resumeItemListEnd
+
+    % Trivio Project
+    \resumeProjectHeading
+        {\textbf{Trivio} $|$ \emph{APIs, Flask, LLMs, JavaScript}}{Sep 2024}
+    \resumeItemListStart
+        \resumeItem{Engineered an AI-powered Chrome extension for interactive learning on YouTube videos, leveraging LLMs to generate context-aware questions, summaries, and knowledge checks.}
+        \resumeItem{Evaluated the platform with 20+ student users, achieving a 75\% improvement in quiz retention and engagement through real-time adaptive assessments, NLP-driven content understanding, and personalized learning workflows.}
+    \resumeItemListEnd
+    
+    \resumeSubheading
+      {The Institution of Engineers - India VIT Student Chapter} {Feb 2023 - Feb 2024}
+      {Technical Head} {}
+      \resumeItemListStart
+        \resumeItem{Led 120+ members to deliver 10 workshops with 500+ attendees; organized Illumina’23 hackathon with 200+ participants.}
+    \resumeItemListEnd
+
+    % \resumeSubheading
+    %   {Robin Hood Army} {Dec 2024 - Present}
+    %   {Food Distribution and Education Drive Volunteer} {}
+
+    % DASSH Hackathon
+    \resumeProjectHeading
+         {\textbf{DASSH (Yantra Hackathon'23 Winner)} $|$ \emph{ReactJS, Solidity, Hardhat, Transfer Learning Model}}{Jun 2023}
+    \resumeItemListStart
+        \resumeItem{Built a supply chain platform leveraging AI demand forecasting improving inventory and order processing efficiency by 40\%.}
+        \resumeItem{Implemented blockchain-backed transaction validation and a transfer learning anomaly detection model achieving 97\% accuracy in fraud detection.}
+    \resumeItemListEnd
+
+    % \resumeSubheading
+    %   {GirlScript Summer of Code} {May 2023 - July 2023}
+    %   {Open Source Contributor} {}
+      
+      
+    \resumeSubHeadingListEnd
+
+
+ %-----------ACHIEVEMENTS-----------
+\section{Achievements}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+    {\textbf{HPE Secure Coding Tournament} $|$ \emph{May 2026}}{ - Secured 1st place HPE wide in the beginner category }\\
+    
+    {\textbf{IET Scholarship Award - Regional Level } $|$ \emph{Aug 2024}}{ - Selected Among top 100 students nationally for Regional Round }\\
+    
+    {\textbf{\href{https://www.credly.com/badges/fc07f2c2-67e5-4c73-bec7-d7e336bd6d01/linked_in?t=s5ssa2}
+    {\underline{AWS Certified Solutions Architect}}}  $|$ \emph{Dec 2023}} \\
+    
+    {\textbf{\href{https://www.credly.com/badges/e9135848-b13f-4cb5-ad22-90c765fbde43/linked_in_profile}
+    {\underline{AWS Certified Cloud Practitioner}}} $|$ \emph{Dec 2023}} \\
+    
+    {\textbf{DASSH} $|$ \emph{June 2023}}{ - Secured 1st in track in Yantra Hackathon} \\
+    
+     {\textbf{Program Representative and Merit Scholarship} $|$ \emph{May 2022, Apr 2023}}{ - Branch Topper in 5 semesters} \\
+     
+     {\textbf{Code Confluence} $|$ \emph{June 2023}}{ - Secured third position in contest based on Open-Source} \\
+        }}
+    \end{itemize}
+%-----------PROGRAMMING SKILLS-----------
+\section{Technical Skills}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     \textbf{Languages}{ - Python, Java, JavaScript, C, C++, HTML, CSS, Solidity, Shell scripting} \\
+     \textbf{AI/ML} - {LangChain, MCP, RAG, TensorFlow, PyTorch, Hugging Face, CNN} \\
+     \textbf{Data Analysis and Databases}{ - MySQL, SQL/MX, Pandas, NumPy} \\
+     \textbf{Tools and Platforms}{ - Git, AWS} \\
+    }
+    }
+ \end{itemize}
+\end{document}
+\end{document}

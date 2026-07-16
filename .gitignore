@@ -1,0 +1,20 @@
+# Credentials & Secrets
+.env
+
+# Job database
+extracted_jobs.json
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# OS metadata
+.DS_Store
+Thumbs.db
