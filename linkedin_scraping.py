@@ -10,23 +10,73 @@ from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeo
 # Load environment variables from .env file
 load_dotenv()
 
-LOGIN_EMAIL = os.getenv("LOGIN_EMAIL", os.getenv("LINKEDIN_EMAIL"))
-LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", os.getenv("LINKEDIN_PASSWORD"))
-TARGET_URL = os.getenv("TARGET_URL", "https://example.com/login")
+# Schema Migration Helper
+def migrate_company_codes():
+    old_file = "companyCodes.json"
+    new_file = "companyData.json"
+    if os.path.exists(old_file):
+        try:
+            with open(old_file, "r", encoding="utf-8") as f:
+                old_data = json.load(f)
+            
+            new_data = {}
+            for k, v in old_data.items():
+                if isinstance(v, dict):
+                    new_data[k] = v
+                else:
+                    new_data[k] = {"code": v, "template": None}
+                    
+            with open(new_file, "w", encoding="utf-8") as f:
+                json.dump(new_data, f, indent=4, ensure_ascii=False)
+                
+            os.remove(old_file)
+            print(f"Successfully migrated {old_file} to {new_file}")
+        except Exception as e:
+            print(f"Error migrating company codes file: {e}")
+
+migrate_company_codes()
+
+LOGIN_EMAIL = os.getenv("LOGIN_EMAIL") or os.getenv("LINKEDIN_EMAIL")
+LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD") or os.getenv("LINKEDIN_PASSWORD")
+
+TARGET_URL = os.getenv("TARGET_URL")
+if not TARGET_URL:
+    TARGET_URL = "https://example.com/login"
 
 # Jobs search configuration
 JOBS_URL = os.getenv("JOBS_URL")
-JOB_CARD_SELECTOR = os.getenv("JOB_CARD_SELECTOR", 'div[role="button"][componentkey^="job-card-component-ref-"], .job-listing-item, .job-card, li.jobs-search-results__list-item')
-JOB_TITLE_SELECTOR = os.getenv("JOB_TITLE_SELECTOR", 'p[class*="_3e7ac687"] span[aria-hidden="true"], p._3e7ac687 span[aria-hidden="true"], .job-title')
-JOB_COMPANY_SELECTOR = os.getenv("JOB_COMPANY_SELECTOR", 'p[class*="_77240ce7"], p._77240ce7, .company-name')
+
+JOB_CARD_SELECTOR = os.getenv("JOB_CARD_SELECTOR")
+if not JOB_CARD_SELECTOR:
+    JOB_CARD_SELECTOR = 'div[role="button"][componentkey^="job-card-component-ref-"], .job-listing-item, .job-card, li.jobs-search-results__list-item'
+
+JOB_TITLE_SELECTOR = os.getenv("JOB_TITLE_SELECTOR")
+if not JOB_TITLE_SELECTOR:
+    JOB_TITLE_SELECTOR = (
+        '[data-display-contents="true"] p span[aria-hidden="true"], '
+        '[data-display-contents="true"] p, '
+        'p span[aria-hidden="true"], '
+        '.job-card-list__title, .job-card-container__link, .artdeco-entity-lockup__title a, '
+        'a[href*="/jobs/view/"], span[class*="title"], .job-title'
+    )
+
+JOB_COMPANY_SELECTOR = os.getenv("JOB_COMPANY_SELECTOR")
+if not JOB_COMPANY_SELECTOR:
+    JOB_COMPANY_SELECTOR = (
+        '[data-display-contents="true"] + div p, '
+        '.job-card-container__company-name, .job-card-list__company-name, '
+        'span.job-card-container__primary-description, span[class*="company-name"], '
+        '.artdeco-entity-lockup__subtitle, .company-name'
+    )
 
 # Selector for the job description container inside the details pane
-JOB_DESCRIPTION_SELECTOR = os.getenv(
-    "JOB_DESCRIPTION_SELECTOR",
-    '[componentkey^="JobDetails_AboutTheJob_"] [data-testid="expandable-text-box"], '
-    '[id^="JobDetails_AboutTheJob_"] [data-testid="expandable-text-box"], '
-    '.jobs-description__container, .jobs-box__html-content'
-)
+JOB_DESCRIPTION_SELECTOR = os.getenv("JOB_DESCRIPTION_SELECTOR")
+if not JOB_DESCRIPTION_SELECTOR:
+    JOB_DESCRIPTION_SELECTOR = (
+        '[componentkey^="JobDetails_AboutTheJob_"] [data-testid="expandable-text-box"], '
+        '[id^="JobDetails_AboutTheJob_"] [data-testid="expandable-text-box"], '
+        '.jobs-description__container, .jobs-box__html-content'
+    )
 
 def validate_credentials():
     """Validates that credentials are set in the environment."""
@@ -92,6 +142,17 @@ def login(page, email, password, target_url):
         print(f"Failed to navigate to target URL: {e}")
         return False
         
+    # Wait briefly for redirects to resolve
+    try:
+        page.wait_for_load_state("domcontentloaded", timeout=5000)
+    except Exception:
+        pass
+
+    # Check if already logged in (e.g. redirected to feed or search results)
+    if "linkedin.com/feed" in current_url or "linkedin.com/search" in current_url or page.locator("#global-nav").is_visible() or page.locator(".global-nav").is_visible():
+        print("Detected active login session (already logged in). Skipping login flow.")
+        return True
+
     email_selectors = [
         'input[autocomplete*="username"]',
         'input[type="email"]',
@@ -121,7 +182,16 @@ def login(page, email, password, target_url):
         print("Waiting for login form to load...")
         # Wait for any of the visible email input elements to load
         combined_email_selector = ", ".join([f"{sel}:visible" for sel in email_selectors])
-        page.wait_for_selector(combined_email_selector, state="visible", timeout=15000)
+        try:
+            page.wait_for_selector(combined_email_selector, state="visible", timeout=10000)
+        except Exception as wait_err:
+            # Fallback check: check again if logged in before raising error
+            current_url = page.url
+            if "linkedin.com/feed" in current_url or "linkedin.com/search" in current_url or page.locator("#global-nav").is_visible() or page.locator(".global-nav").is_visible():
+                print("Detected active login session during wait. Skipping login flow.")
+                return True
+            else:
+                raise wait_err
         
         # Form is loaded; now extract the elements using fallback logic
         username_field = find_element_with_fallback(page, email_selectors, "username field")
@@ -140,6 +210,7 @@ def login(page, email, password, target_url):
         
         simulate_human_pause(0.8, 2.0)
         
+        # Enter password
         print("Entering password...")
         type_like_human(password_field, password)
         
@@ -152,6 +223,28 @@ def login(page, email, password, target_url):
         print("Waiting for page redirection/verification check...")
         time.sleep(3)
         
+        # Check for Security Check / CAPTCHA
+        security_check_selectors = [
+            'h1:has-text("security check")',
+            'h1:has-text("Let’s do a quick security check")',
+            'h1:has-text("Let\'s do a quick security check")',
+            'h1:text-matches("security check", "i")',
+            '#checkpoint-header'
+        ]
+        combined_security_selector = ", ".join(security_check_selectors)
+        try:
+            page.wait_for_selector(combined_security_selector, state="visible", timeout=5000)
+            print("\n" + "="*75)
+            print("⚠️ SECURITY CHECK / CAPTCHA DETECTED!")
+            print("Please solve the security check in the browser window.")
+            print("Once solved, return to this terminal and press Enter to continue...")
+            print("="*75 + "\n")
+            input("Press Enter here once you have solved the captcha...")
+            print("Resuming script execution...")
+            time.sleep(2)
+        except Exception:
+            pass
+            
         current_url = page.url
         print(f"Current URL after login attempt: {current_url}")
         return True
@@ -219,11 +312,28 @@ def fetch_jobs_and_descriptions(page, jobs_url, card_selector, title_selector, c
                         continue
                     
                     # Extract Title and Company Name
-                    title_elem = card.locator(title_selector).first
-                    company_elem = card.locator(company_selector).first
+                    title = "N/A"
+                    company = "N/A"
                     
-                    title = title_elem.inner_text().strip() if title_elem.is_visible() else "N/A"
-                    company = company_elem.inner_text().strip() if company_elem.is_visible() else "N/A"
+                    title_elem = card.locator(title_selector).first
+                    if title_elem.count() > 0:
+                        try:
+                            title = title_elem.inner_text().strip()
+                        except Exception:
+                            try:
+                                title = title_elem.text_content().strip()
+                            except Exception:
+                                pass
+                                
+                    company_elem = card.locator(company_selector).first
+                    if company_elem.count() > 0:
+                        try:
+                            company = company_elem.inner_text().strip()
+                        except Exception:
+                            try:
+                                company = company_elem.text_content().strip()
+                            except Exception:
+                                pass
                     
                     # Click the card to load details in the side panel
                     print(f"Clicking job card {index} (jobId: {job_id}): '{title}' | '{company}'...")
@@ -321,12 +431,14 @@ def perform_scraping(on_job_found=None, limit=None):
     
     print("Initializing Playwright Chromium Browser...")
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
-        context = browser.new_context(
+        user_data_dir = os.path.join(os.getcwd(), "playwright_user_data")
+        context = p.chromium.launch_persistent_context(
+            user_data_dir=user_data_dir,
+            headless=False,
             viewport={"width": 1280, "height": 800},
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
-        page = context.new_page()
+        page = context.pages[0] if context.pages else context.new_page()
         
         # 1. Login
         login_success = login(page, LOGIN_EMAIL, LOGIN_PASSWORD, TARGET_URL)
@@ -354,7 +466,262 @@ def perform_scraping(on_job_found=None, limit=None):
             print("Press Enter in the terminal to close the browser and exit...")
             input()
         
-        browser.close()
+        context.close()
+
+def perform_referral_search(company_name, on_person_found=None):
+    """Logs into LinkedIn and searches for 2nd-degree connections at the given company, streaming matches."""
+    validate_credentials()
+    
+    print(f"Initializing Playwright for Referral Search at '{company_name}'...")
+    with sync_playwright() as p:
+        user_data_dir = os.path.join(os.getcwd(), "playwright_user_data")
+        context = p.chromium.launch_persistent_context(
+            user_data_dir=user_data_dir,
+            headless=False,
+            viewport={"width": 1280, "height": 800},
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        page = context.pages[0] if context.pages else context.new_page()
+        
+        # 1. Login
+        login_success = login(page, LOGIN_EMAIL, LOGIN_PASSWORD, TARGET_URL)
+        if not login_success:
+            print("Login failed. Skipping referral search.")
+            context.close()
+            return []
+            
+        # 2. Check companyData.json
+        company_code = None
+        json_filename = "companyData.json"
+        if os.path.exists(json_filename):
+            try:
+                with open(json_filename, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    # Case-insensitive match
+                    for k, v in data.items():
+                        if k.lower() == company_name.lower():
+                            if isinstance(v, dict):
+                                company_code = v.get("code")
+                            else:
+                                company_code = v
+                            break
+            except Exception as e:
+                print(f"Warning: Could not read {json_filename}: {e}")
+                
+        base_search_url = os.getenv("REFERRAL_SEARCH_URL")
+        if not base_search_url:
+            base_search_url = "https://www.linkedin.com/search/results/people/?origin=FACETED_SEARCH&network=%5B%22S%22%5D&connectionOf=%5B%22ACoAADgvGtEBzouH4F9_6Nl9gt0xvWEGij0s1Jg%22%5D"
+        
+        if company_code:
+            # We already have the code! Navigate directly
+            target_url = f"{base_search_url}&currentCompany=%5B%22{company_code}%22%5D"
+            print(f"Company code found in cache: {company_code}. Navigating to target URL: {target_url}")
+            try:
+                page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
+            except Exception as e:
+                print(f"Failed to navigate: {e}")
+                context.close()
+                return []
+        else:
+            # Code not cached; navigate to base search URL and perform manual filter selection
+            print(f"No cached company code for '{company_name}'. Navigating to search URL: {base_search_url}")
+            try:
+                page.goto(base_search_url, wait_until="domcontentloaded", timeout=30000)
+            except Exception as e:
+                print(f"Failed to navigate: {e}")
+                context.close()
+                return []
+                
+            simulate_human_pause(2.0, 3.5)
+            
+            pill_selectors = [
+                '[componentkey="SearchResults_filter_pill_currentCompany"]',
+                'button:has-text("Current company")',
+                'button:has-text("Current companies")',
+                '[aria-label*="Current company"]',
+                '[aria-label*="Current companies"]'
+            ]
+            
+            # Click the Current Companies filter pill
+            print("Locating Current companies filter pill...")
+            pill = find_element_with_fallback(page, pill_selectors, "Current companies filter pill")
+            if not pill:
+                print("Could not find the Current companies filter pill.")
+                context.close()
+                return []
+            
+            try:
+                pill.click()
+                simulate_human_pause(1.0, 2.0)
+                
+                input_selectors = [
+                    'input[placeholder="Add a company"]',
+                    'input[placeholder="Add a current company"]',
+                    'input[aria-label="Add a company"]',
+                    'input[aria-label="Add a current company"]',
+                    'input[id^="currentCompany-"]',
+                    '.search-reusables__typeahead-input'
+                ]
+                
+                # Type company name into Add a company input
+                print(f"Typing company name '{company_name}' in search input...")
+                input_field = find_element_with_fallback(page, input_selectors, "Add a company input field")
+                if not input_field:
+                    raise PlaywrightTimeoutError("Could not find the Add a company input field.")
+                    
+                input_field.click()
+                input_field.fill("")
+                input_field.press_sequentially(company_name, delay=150)
+                simulate_human_pause(2.0, 3.0) # wait for typeahead dropdown
+                
+                # Wait for the suggestions dropdown to appear and select the first option
+                suggestion_selectors = [
+                    'div[role="listbox"] div[role="option"]',
+                    '.basic-typeahead__triggered-content div',
+                    '[id^="typeahead-result-"]',
+                    'div[role="option"]'
+                ]
+                
+                try:
+                    first_suggestion = find_element_with_fallback(page, suggestion_selectors, "First search suggestion")
+                    if first_suggestion:
+                        first_suggestion.click()
+                        print("Selected suggestion by clicking the dropdown option.")
+                    else:
+                        raise PlaywrightTimeoutError("No dropdown suggestion found.")
+                except Exception as sugg_err:
+                    print(f"Could not click suggestion option directly ({sugg_err}). Trying keyboard navigation...")
+                    page.keyboard.press("ArrowDown")
+                    simulate_human_pause(0.5, 1.0)
+                    page.keyboard.press("Enter")
+                    simulate_human_pause(1.0, 2.0)
+                
+                # Click the Show Results button
+                show_results_selectors = [
+                    'button:has-text("Show results")',
+                    'span:has-text("Show results")',
+                    'button[aria-label*="Show results"]',
+                    '.reusable-search-filters-buttons button[type="submit"]',
+                    '.search-reusables__filter-actions button:has-text("Show results")'
+                ]
+                
+                print("Clicking Show results button...")
+                show_results_btn = find_element_with_fallback(page, show_results_selectors, "Show results button")
+                if not show_results_btn:
+                    raise PlaywrightTimeoutError("Could not find the Show results button.")
+                    
+                show_results_btn.click()
+                
+                # Wait immediately for the URL to change to contain currentCompany
+                try:
+                    page.wait_for_url(lambda url: "currentCompany" in url, timeout=8000)
+                except Exception as e:
+                    print(f"Warning: URL did not update to include currentCompany within timeout: {e}")
+                
+                # Read the current URL and extract currentCompany ID
+                current_url = page.url
+                print(f"Search results URL loaded: {current_url}")
+                parsed_url = urlparse(current_url)
+                q = parse_qs(parsed_url.query)
+                if "currentCompany" in q:
+                    val = q["currentCompany"][0]
+                    try:
+                        company_ids = json.loads(val)
+                        extracted_code = company_ids[0]
+                    except Exception:
+                        extracted_code = val.replace("[", "").replace("]", "").replace('"', '').replace("'", "")
+                        
+                    print(f"Extracted company code: {extracted_code}")
+                    # Save/merge to companyData.json
+                    data = {}
+                    if os.path.exists(json_filename):
+                        try:
+                            with open(json_filename, "r", encoding="utf-8") as f:
+                                data = json.load(f)
+                        except Exception:
+                            pass
+                    
+                    company_key = company_name.lower()
+                    if company_key not in data or not isinstance(data[company_key], dict):
+                        data[company_key] = {"code": extracted_code, "template": None}
+                    else:
+                        data[company_key]["code"] = extracted_code
+                        
+                    with open(json_filename, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                        
+            except Exception as e:
+                print(f"Error during manual company filtering: {e}")
+                context.close()
+                return []
+                
+        # 3. Stream/extract people cards
+        print("Extracting search results...")
+        people_list = []
+        try:
+            page.wait_for_selector('a[href*="/in/"]', state="visible", timeout=15000)
+            links = page.locator('a[href*="/in/"]').all()
+            seen_urls = set()
+            
+            for index, link in enumerate(links, start=1):
+                try:
+                    url = link.get_attribute("href")
+                    if not url:
+                        continue
+                    url_clean = url.split("?")[0]
+                    if url_clean in seen_urls:
+                        continue
+                        
+                    name = link.inner_text().strip()
+                    if "•" in name:
+                        name = name.split("•")[0].strip()
+                    name = name.split("\n")[0].strip()
+                    
+                    if not name or name.lower() in ["view profile", "linkedin member", ""]:
+                        continue
+                        
+                    seen_urls.add(url_clean)
+                    
+                    # Sibling traversal to find headline
+                    headline = "N/A"
+                    try:
+                        parent = link.locator("xpath=../..")
+                        text_content = parent.inner_text()
+                        lines = [line.strip() for line in text_content.split("\n") if line.strip()]
+                        if len(lines) > 1:
+                            headline = lines[1]
+                            if headline.startswith("•") and len(lines) > 2:
+                                headline = lines[2]
+                    except Exception:
+                        pass
+                        
+                    person_data = {
+                        "name": name,
+                        "url": url_clean,
+                        "headline": headline
+                    }
+                    people_list.append(person_data)
+                    
+                    if on_person_found:
+                        try:
+                            on_person_found(person_data)
+                            time.sleep(2.0)
+                        except Exception as cb_err:
+                            print(f"Error in on_person_found callback: {cb_err}")
+                            
+                except Exception as card_err:
+                    print(f"Error parsing person link #{index}: {card_err}")
+        except Exception as e:
+            print(f"Error extracting people: {e}")
+            
+        print(f"Referral search complete. Found {len(people_list)} connections.")
+        
+        if not os.getenv("RUN_BY_BOT"):
+            print("\nPress Enter in the terminal to close the browser...")
+            input()
+            
+        context.close()
+        return people_list
 
 if __name__ == "__main__":
     try:

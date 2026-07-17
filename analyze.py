@@ -9,9 +9,11 @@ import google.generativeai as genai
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-RESUME_FILE = "shreya_resume.tex"
+RESUME_FILE = "experiences.txt"
 JOBS_FILE = "extracted_jobs.json"
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+MODEL_NAME = os.getenv("GEMINI_MODEL")
+if not MODEL_NAME:
+    MODEL_NAME = "gemini-3.1-flash-lite"
 
 def list_supported_models():
     """Lists the available models supporting generateContent for diagnostic purposes."""
@@ -53,7 +55,7 @@ def save_single_job_to_json(job, json_filename="extracted_jobs.json"):
         json.dump(merged_list, f, indent=4, ensure_ascii=False)
 
 def analyze_single_job(job, resume_content):
-    """Submits a single job listing to Gemini for resume compatibility analysis."""
+    """Submits a single job listing to Gemini for compatibility analysis based on experiences."""
     if not GEMINI_API_KEY:
         print("Error: GEMINI_API_KEY not configured.")
         return None
@@ -68,11 +70,11 @@ def analyze_single_job(job, resume_content):
         
     system_instruction = (
         "You are an expert career advisor assisting Shreya with her job applications.\n"
-        "Your task is to review a job posting description and Shreya's resume, and decide whether it is worth applying or not.\n"
+        "Your task is to review a job posting description and Shreya's experiences context, and decide whether it is worth applying or not.\n"
         "Apply these CRITICAL criteria strictly:\n"
         "1. Experience requirement: The job must require less than 2 years of experience (freshers, 0-1 years, or 1 year are ideal. If it strictly requires 2+ years, set shouldApply to 'false').\n"
         "2. Company size & reputation: The company must be reputable, with at least 1,000 employees.\n"
-        "3. Fit check: Shreya's skills listed in the resume must have reasonable alignment with the job description.\n\n"
+        "3. Fit check: Shreya's skills and accomplishments listed in her experiences must have reasonable alignment with the job description.\n\n"
         "You must respond in JSON format matching this EXACT schema:\n"
         "{\n"
         '  "shouldApply": "true" or "false" (must be string values),\n'
@@ -84,7 +86,7 @@ def analyze_single_job(job, resume_content):
         f"--- CRITERIA ---\n"
         f"1. Less than 2 years experience requirement.\n"
         f"2. Reputable company with at least 1000 employees.\n\n"
-        f"--- SHREYA'S RESUME (Latex format) ---\n"
+        f"--- SHREYA'S EXPERIENCES ---\n"
         f"{resume_content}\n\n"
         f"--- JOB DETAILS ---\n"
         f"Position: {job.get('position_name')}\n"
@@ -172,6 +174,67 @@ def analyze_jobs():
             time.sleep(2.0)
             
     print(f"\nAnalysis complete. Successfully analyzed {success_count} jobs.")
+
+def generate_outreach_template(company_name):
+    """Generates a professional outreach template for a specific company using Gemini."""
+    if not GEMINI_API_KEY:
+        print("Error: GEMINI_API_KEY is not configured.")
+        return None
+        
+    # Read experiences
+    experiences_file = "experiences.txt"
+    try:
+        with open(experiences_file, "r", encoding="utf-8") as f:
+            experiences_content = f.read()
+    except Exception as e:
+        print(f"Error reading experiences file in outreach generator: {e}")
+        experiences_content = ""
+
+    genai.configure(api_key=GEMINI_API_KEY)
+    
+    try:
+        model = genai.GenerativeModel(MODEL_NAME)
+    except Exception as e:
+        print(f"Failed to initialize model '{MODEL_NAME}': {e}")
+        return None
+        
+    prompt = f"""
+You are writing a professional, personalized referral request outreach message template.
+
+Here is the context:
+- Applicant's Name: Shreya
+- Target Company: {company_name}
+- Applicant's Experiences:
+{experiences_content}
+
+Instructions:
+1. Based on the real work experience, skills, and background documented in the provided Applicant's Experiences, come up with a highly tailored and relevant outreach message. Do NOT try to access or fetch any external links.
+2. The message must strictly adhere to the following format structure:
+
+Format/Guidelines:
+1. Do NOT include any greeting or salutation (like 'Hi <name>,', 'Hi,', 'Hello', etc.) at the beginning. Start writing directly from the first paragraph of the body.
+
+2. The first paragraph must talk briefly about the target company ({company_name}) and the applicant's intent to work there (e.g. why the company's engineering/work inspires them, and that they are applying for a software engineering/backend role).
+3. The following paragraph must briefly highlight 2-3 key accomplishments from the provided Applicant's Experiences that directly align with engineering challenges at {company_name}. Make it highly specific to the actual background found on the experiences. Keep it concise and professional.
+4. The ENTIRE generated text (excluding any salutation, since none should be generated) MUST be strictly less than or equal to 100 words. Do not let it exceed this limit under any circumstances.
+
+Do not output any introductory or concluding remarks, explanations, markdown code blocks, or markdown formatting (like ```). Output ONLY the final message template.
+"""
+    try:
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        # Strip any accidental markdown formatting
+        if text.startswith("```"):
+            lines = text.split("\n")
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines[-1].strip() == "```":
+                lines = lines[:-1]
+            text = "\n".join(lines).strip()
+        return text
+    except Exception as e:
+        print(f"Error generating outreach template with Gemini: {e}")
+        return None
 
 if __name__ == "__main__":
     analyze_jobs()

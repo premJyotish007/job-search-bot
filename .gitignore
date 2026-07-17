@@ -3,6 +3,8 @@
 
 # Job database
 extracted_jobs.json
+companyData.json
+playwright_user_data
 
 # Python artifacts
 __pycache__/
