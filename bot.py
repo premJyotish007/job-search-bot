@@ -332,12 +332,12 @@ async def analyze_jobs_cmd(ctx, limit: int = None):
             
         print(f"[ANALYZE LOG] Processed analysis for job: '{position}' at '{company}' (Verdict: {should_apply})")
         
-        # Build interactive toggle checkbox view
-        is_applied_bool = job.get("applied") == "true"
-        view = JobAppliedView(job_id, is_applied_bool)
-        
         # Post the final job card with the view attached
         if should_apply == "true":
+            # Build interactive toggle checkbox view
+            is_applied_bool = job.get("applied") == "true"
+            view = JobAppliedView(job_id, is_applied_bool)
+            
             embed = discord.Embed(
                 title=f"{idx}. 🎯 MATCH: {position}",
                 description=reason,
@@ -349,8 +349,8 @@ async def analyze_jobs_cmd(ctx, limit: int = None):
             embed.set_footer(text=f"Card {idx}/{len(unapplied_jobs)} | gemini-3.1-flash-lite")
             await ctx.send(embed=embed, view=view)
         else:
-            # Single-line message for rejected/skipped jobs with the button view attached
-            await ctx.send(f"❌ SKIPPED: {url} because {reason}", view=view)
+            # Single-line message for rejected/skipped jobs
+            await ctx.send(f"❌ SKIPPED: {url} because {reason}")
             
         await asyncio.sleep(rate_limit_delay)
         
