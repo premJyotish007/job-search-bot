@@ -6,6 +6,9 @@ extracted_jobs.json
 companyData.json
 playwright_user_data
 
+# Runtime lock files
+bot.pid
+
 # Python artifacts
 __pycache__/
 *.pyc

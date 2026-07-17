@@ -3,12 +3,61 @@ import sys
 import json
 import asyncio
 import ssl
+import atexit
+import signal
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
 # Load env variables
 load_dotenv()
+
+# ── Single-instance guard ──────────────────────────────────────────────────
+# Prevents multiple bot processes from running simultaneously (which causes
+# each Discord command to be handled by every instance, sending duplicate
+# messages to the channel).
+PID_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.pid")
+
+def _check_existing_instance():
+    if os.path.exists(PID_FILE):
+        try:
+            with open(PID_FILE, "r") as f:
+                old_pid = int(f.read().strip())
+            # os.kill(pid, 0) checks existence without sending a signal
+            os.kill(old_pid, 0)
+            print(
+                f"\u274c Another bot instance is already running (PID {old_pid}).\n"
+                f"   Kill it first:  kill {old_pid}\n"
+                f"   Or delete the lock file:  rm {PID_FILE}"
+            )
+            sys.exit(1)
+        except (ProcessLookupError, ValueError):
+            # Stale PID file from a crashed/killed previous run — safe to overwrite
+            print(f"[INFO] Removed stale PID file (previous bot exited uncleanly).")
+
+    with open(PID_FILE, "w") as f:
+        f.write(str(os.getpid()))
+    print(f"[INFO] Bot started (PID {os.getpid()}). Lock file written.")
+
+def _cleanup_pid_file():
+    """Remove the PID lock file on any exit."""
+    try:
+        os.remove(PID_FILE)
+        print("[INFO] PID lock file removed. Bot exiting cleanly.")
+    except FileNotFoundError:
+        pass
+
+def _signal_handler(signum, frame):
+    """Handle SIGINT (Ctrl+C) and SIGTERM gracefully."""
+    print(f"\n[INFO] Received signal {signum}. Shutting down...")
+    _cleanup_pid_file()
+    sys.exit(0)
+
+_check_existing_instance()
+atexit.register(_cleanup_pid_file)
+signal.signal(signal.SIGINT, _signal_handler)
+signal.signal(signal.SIGTERM, _signal_handler)
+# ──────────────────────────────────────────────────────────────────────────
 
 # Bypasses local SSL certificate issues common in macOS Python installations
 ssl._create_default_https_context = ssl._create_unverified_context

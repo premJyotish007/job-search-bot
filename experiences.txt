@@ -1,0 +1,23 @@
+HEWLETT PACKARD ENTERPRISE | Bangalore, India
+Software Engineer I (Sept 2025 - Present)
+- Delivered components for Transparent Data Encryption with HSM and modules for cataloguing virtual keystores, improving secure key discovery and management within encrypted environments.
+- Resolved 2 critical production defects for the HPE NonStop Database Compiler by correlating application errors with code-level issues to accelerate root-cause analysis.
+- Led AI-powered CVE analysis system POC — leveraged LLMs to analyze 1,000+ code files and identify security exposures with 97% detection accuracy, which enabled faster vulnerability assessment across large-scale codebases.
+
+Software Engineer Intern (Feb 2025 - Aug 2025)
+- Architected an automated pre-CIT infrastructure validation framework for NonStop Database environments, performing system readiness, dependency, and configuration integrity checks prior to execution of 8-hour CIT cycles.
+- Integrated the validation framework into CI/CD pipelines, significantly reducing failure diagnosis and recovery time from hours to minutes.
+
+CTY Intern (Jan 2024 - Jun 2024)
+- Engineered a real-time security automation tool integrating packet sniffing, network traffic capture, and IPC mechanisms to process and analyze 10,000+ network events efficiently.
+
+SAMSUNG R&D INSTITUTE | Remote
+PRISM Project Intern (Dec 2023 - Jun 2024)
+- Modelled a quality assurance framework for image caption generation models, achieving a 12% improvement in BLEU score accuracy over baseline models on the Flickr8k Dataset through optimized evaluation and model validation techniques.
+
+---
+OTHER LEADERSHIP/VOLUNTEERING ROLES (from Projects/Clubs section)
+
+THE INSTITUTION OF ENGINEERS - INDIA VIT STUDENT CHAPTER | Feb 2023 - Feb 2024
+Technical Head
+- Led 120+ members to deliver 10 workshops with 500+ attendees; organized Illumina’23 hackathon with 200+ participants.

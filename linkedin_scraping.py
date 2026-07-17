@@ -149,7 +149,7 @@ def login(page, email, password, target_url):
         pass
 
     # Check if already logged in (e.g. redirected to feed or search results)
-    if "linkedin.com/feed" in current_url or "linkedin.com/search" in current_url or page.locator("#global-nav").is_visible() or page.locator(".global-nav").is_visible():
+    if "linkedin.com/feed" in page.url or "linkedin.com/search" in page.url or page.locator("#global-nav").is_visible() or page.locator(".global-nav").is_visible():
         print("Detected active login session (already logged in). Skipping login flow.")
         return True
 
@@ -186,8 +186,7 @@ def login(page, email, password, target_url):
             page.wait_for_selector(combined_email_selector, state="visible", timeout=10000)
         except Exception as wait_err:
             # Fallback check: check again if logged in before raising error
-            current_url = page.url
-            if "linkedin.com/feed" in current_url or "linkedin.com/search" in current_url or page.locator("#global-nav").is_visible() or page.locator(".global-nav").is_visible():
+            if "linkedin.com/feed" in page.url or "linkedin.com/search" in page.url or page.locator("#global-nav").is_visible() or page.locator(".global-nav").is_visible():
                 print("Detected active login session during wait. Skipping login flow.")
                 return True
             else:
@@ -245,8 +244,7 @@ def login(page, email, password, target_url):
         except Exception:
             pass
             
-        current_url = page.url
-        print(f"Current URL after login attempt: {current_url}")
+        print(f"Current URL after login attempt: {page.url}")
         return True
     except Exception as e:
         print(f"An error occurred during login: {e}")
